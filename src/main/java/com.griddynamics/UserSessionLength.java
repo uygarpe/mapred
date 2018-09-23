@@ -3,6 +3,9 @@ package com.griddynamics;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.StringTokenizer;
 
 import jdk.nashorn.internal.ir.annotations.Ignore;
@@ -25,15 +28,15 @@ public class UserSessionLength {
 		                   Context context
 		) throws IOException, InterruptedException {
 			TimestampWritableComparable result = new TimestampWritableComparable();
-			long bt=0L;
-			long et=0L;
+			LocalDateTime bt=null;
+			LocalDateTime et=null;
 			for (TimestampWritableComparable val : values) {
-				bt += val.getBeginTimestamp();
-				et += val.getEndTimestamp();
+				if(bt==null) bt=val.getBeginTimestamp();
+				if(et==null) et=val.getEndTimestamp();
 			}
 			result.setBeginTimestamp(bt);
 			result.setEndTimestamp(et);
-			result.setSessionDuration(et-bt);
+			result.setSessionDuration(Duration.between(et,bt));
 			key.setSessionId("");
 			context.write(key, result);
 		}
@@ -45,12 +48,12 @@ public class UserSessionLength {
 		                   Context context
 		) throws IOException, InterruptedException {
 			TimestampWritableComparable result = new TimestampWritableComparable();
-			long maxdur=0L;
-			long bt=0;
-			long et=0;
+			Duration maxdur=Duration.ZERO;
+			LocalDateTime bt=null;
+			LocalDateTime et=null;
 			for (TimestampWritableComparable val : values) {
-				long dur = val.getSessionDuration();
-				if(dur>maxdur){
+				Duration dur = val.getSessionDuration();
+				if(dur.compareTo(maxdur)>0){
 					maxdur= dur;
 					bt = val.getBeginTimestamp();
 					et = val.getEndTimestamp();

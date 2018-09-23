@@ -1,81 +1,135 @@
 package com.griddynamics;
 
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class TimestampWritableComparable  implements WritableComparable<TimestampWritableComparable> {
-	private long beginTimestamp;
-	private long endTimestamp;
-	private long sessionDuration;
+	private LocalDateTime beginTimestamp;
+	private LocalDateTime endTimestamp;
+	private Duration sessionDuration;
+	private Text beginTimestampText;
+	private Text endTimestampText;
+	private Text sessionDurationText;
+
+	public Text getBeginTimestampText() {
+		return beginTimestampText;
+	}
+
+	public void setBeginTimestampText(Text beginTimestampText) {
+		this.beginTimestampText = beginTimestampText;
+	}
+
+	public void setBeginTimestampText(LocalDateTime beginTimestamp) {
+		this.beginTimestampText = new Text(beginTimestamp.format(formatter));
+	}
+
+	public Text getEndTimestampText() {
+		return endTimestampText;
+	}
+
+	public void setEndTimestampText(Text endTimestampText) {
+		this.endTimestampText = endTimestampText;
+	}
+
+	public void setEndTimestampText(LocalDateTime endTimestamp) {
+		this.endTimestampText = new Text(endTimestamp.format(formatter));
+	}
+
+	public Text getSessionDurationText() {
+		return sessionDurationText;
+	}
+
+	public void setSessionDurationText(Text durationText) {
+		this.sessionDurationText = durationText;
+	}
+
+	public void setSessionDurationText(Duration duration) {
+		this.sessionDurationText = new Text(duration.toString());
+	}
+
+	DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 	public TimestampWritableComparable(){
-		this.beginTimestamp=0L;
-		this.endTimestamp=0L;
-		this.sessionDuration=0L;
+		this.beginTimestamp=LocalDateTime.MIN;
+		this.endTimestamp= LocalDateTime.MIN;
+		this.sessionDuration = Duration.ZERO;
 	}
 
-	public TimestampWritableComparable(long bt, long et){
+	public TimestampWritableComparable(LocalDateTime bt, LocalDateTime et){
 		this.beginTimestamp=bt;
 		this.endTimestamp= et;
-		this.sessionDuration = et-bt;
+		if (et.equals(LocalDateTime.MIN) || bt.equals(LocalDateTime.MIN)){
+			this.sessionDuration=Duration.ZERO;
+		}
+		else {
+			this.sessionDuration = Duration.between(et,bt);
+		}
+		this.setBeginTimestampText(bt);
+		this.setEndTimestampText(et);
+		this.setSessionDurationText(this.sessionDuration);
 	}
 
-	public long getBeginTimestamp() {
+	public LocalDateTime getBeginTimestamp() {
 		return beginTimestamp;
 	}
 
-	public void setBeginTimestamp(long beginTimestamp) {
+	public void setBeginTimestamp(LocalDateTime beginTimestamp) {
 		this.beginTimestamp = beginTimestamp;
 	}
 
-	public long getEndTimestamp() {
+	public LocalDateTime getEndTimestamp() {
 		return endTimestamp;
 	}
 
-	public void setEndTimestamp(long endTimestamp) {
+	public void setEndTimestamp(LocalDateTime endTimestamp) {
 		this.endTimestamp = endTimestamp;
 	}
 
-	public long getSessionDuration() {
+	public Duration getSessionDuration() {
 		return sessionDuration;
 	}
 
-	public void setSessionDuration(long sessionDuration) {
+	public void setSessionDuration(Duration sessionDuration) {
 		this.sessionDuration = sessionDuration;
 	}
 
 	@Override
 	public int compareTo(TimestampWritableComparable that) {
-		long thisValue = this.sessionDuration;
-		long thatValue = that.sessionDuration;
-		return (thisValue < thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+		return this.sessionDuration.compareTo(that.sessionDuration);
 
 	}
 
 	@Override
 	public void write(DataOutput dataOutput) throws IOException {
-		dataOutput.writeLong(beginTimestamp);
-		dataOutput.writeLong(endTimestamp);
-		dataOutput.writeLong(sessionDuration);
+		dataOutput.writeBytes(beginTimestampText.toString());
+		dataOutput.writeBytes(endTimestampText.toString());
+		dataOutput.writeBytes(sessionDurationText.toString());
 
 	}
 
 	@Override
 	public void readFields(DataInput dataInput) throws IOException {
-		beginTimestamp = dataInput.readLong();
-		endTimestamp = dataInput.readLong();
-		sessionDuration = dataInput.readLong();
+		beginTimestampText.readFields(dataInput);
+		endTimestampText.readFields(dataInput);
+		sessionDurationText.readFields(dataInput);
+		beginTimestamp = LocalDateTime.parse(beginTimestampText.toString(),formatter);
+		endTimestamp = LocalDateTime.parse(endTimestampText.toString(),formatter);
+		sessionDuration = Duration.parse(sessionDurationText.toString());
 	}
 
 
 	@Override
 	public String toString() {
-		return beginTimestamp + "," + endTimestamp+ "," +sessionDuration;
+		return beginTimestamp.format(formatter) + "," + endTimestamp.format(formatter)+ "," +sessionDuration.toString();
 	}
+
 
 }
