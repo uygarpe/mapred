@@ -10,7 +10,7 @@
   <name>mapred</name>
 
   <properties>
-    <jdkLevel>1.6</jdkLevel>
+    <jdkLevel>1.8</jdkLevel>
     <requiredMavenVersion>[2.1,)</requiredMavenVersion>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
