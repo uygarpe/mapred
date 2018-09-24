@@ -1,16 +1,13 @@
 package com.griddynamics;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
-import java.util.StringTokenizer;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -28,36 +25,44 @@ public class UserSessionLength {
 			long bt=0L;
 			long et=0L;
 			for (TimestampWritableComparable val : values) {
-				bt += val.getBeginTimestamp();
-				et += val.getEndTimestamp();
+				if(bt <=0L) bt=val.getBeginTimestamp();
+				if(et <=0L) et=val.getEndTimestamp();
 			}
 			result.setBeginTimestamp(bt);
 			result.setEndTimestamp(et);
-			result.setSessionDuration(et-bt);
+			result.setSessionDuration(bt,et);
 			key.setSessionId("");
 			context.write(key, result);
 		}
 	}
 
-	public static class SessionDurationReducer	extends Reducer<CompositeGroupKey,TimestampWritableComparable,CompositeGroupKey,TimestampWritableComparable> {
+	public static class SessionDurationReducer	extends Reducer<CompositeGroupKey,TimestampWritableComparable,CompositeGroupKey,DateTimeWritable> {
+
+		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+		private LocalDateTime epochSecondsToLocalDateTime(long seconds) {
+			Instant instant = Instant.ofEpochMilli(seconds*1000);
+			LocalDateTime date = instant.atZone(ZoneOffset.UTC).toLocalDateTime();
+			return date;
+		}
 
 		public void reduce(CompositeGroupKey key, Iterable<TimestampWritableComparable> values,
 		                   Context context
 		) throws IOException, InterruptedException {
-			TimestampWritableComparable result = new TimestampWritableComparable();
-			long maxdur=0L;
-			long bt=0;
-			long et=0;
+			DateTimeWritable result = new DateTimeWritable();
+			long maxdur= 0L;
+			LocalDateTime beginLocalDate=null;
+			LocalDateTime endLocalDate=null;
 			for (TimestampWritableComparable val : values) {
 				long dur = val.getSessionDuration();
-				if(dur>maxdur){
+				if(dur > maxdur){
 					maxdur= dur;
-					bt = val.getBeginTimestamp();
-					et = val.getEndTimestamp();
+					beginLocalDate = epochSecondsToLocalDateTime(val.getBeginTimestamp());
+					endLocalDate = epochSecondsToLocalDateTime(val.getEndTimestamp());
 				}
 			}
-			result.setBeginTimestamp(bt);
-			result.setEndTimestamp(et);
+			result.setBeginTimestampText(new Text(beginLocalDate.format(formatter)));
+			result.setEndTimestampText(new Text(endLocalDate.format(formatter)));
 			result.setSessionDuration(maxdur);
 			context.write(key, result);
 		}
@@ -73,7 +78,7 @@ public class UserSessionLength {
 		Job job = new Job(conf, "user session length");
 		job.setJarByClass(UserSessionLength.class);
 
-		job.setMapperClass(SecondarySortMapper.class);
+		job.setMapperClass(UserSessionInfoMapper.class);
 		job.setMapOutputKeyClass(CompositeGroupKey.class);
 		job.setMapOutputValueClass(TimestampWritableComparable.class);
 

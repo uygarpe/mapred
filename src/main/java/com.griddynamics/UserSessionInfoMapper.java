@@ -5,8 +5,10 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
-public class SecondarySortMapper extends Mapper<Object, Text, CompositeGroupKey, TimestampWritableComparable> {
+public class UserSessionInfoMapper extends Mapper<Object, Text, CompositeGroupKey, TimestampWritableComparable> {
 
 	private static final String BEGIN = "begin";
 	private static final String END = "end";
@@ -16,13 +18,13 @@ public class SecondarySortMapper extends Mapper<Object, Text, CompositeGroupKey,
 
 		if (value.toString().length() > 0) {
 			String userActions[] = value.toString().split(",");
-			long beginTimestamp=0L;
-			long endTimestamp=0L;
+			LocalDateTime beginTimestamp=LocalDateTime.MIN;
+			LocalDateTime endTimestamp=LocalDateTime.MIN;
 
 			if(userActions[2].equals(BEGIN)){
-				beginTimestamp = Long.valueOf(userActions[3]);
+				beginTimestamp = LocalDateTime.parse(userActions[3]);
 			}else{
-				endTimestamp = Long.valueOf(userActions[3]);
+				endTimestamp = LocalDateTime.parse(userActions[3]);
 			}
 			TimestampWritableComparable tsw = new TimestampWritableComparable(beginTimestamp,endTimestamp);
 			context.write(new CompositeGroupKey(userActions[0], userActions[1]),tsw);

@@ -1,81 +1,93 @@
 package com.griddynamics;
 
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class TimestampWritableComparable  implements WritableComparable<TimestampWritableComparable> {
 	private long beginTimestamp;
 	private long endTimestamp;
 	private long sessionDuration;
 
+
 	public TimestampWritableComparable(){
 		this.beginTimestamp=0L;
-		this.endTimestamp=0L;
-		this.sessionDuration=0L;
+		this.endTimestamp= 0L;
+		this.sessionDuration = 0L;
 	}
 
-	public TimestampWritableComparable(long bt, long et){
-		this.beginTimestamp=bt;
-		this.endTimestamp= et;
-		this.sessionDuration = et-bt;
-	}
-
-	public long getBeginTimestamp() {
-		return beginTimestamp;
-	}
 
 	public void setBeginTimestamp(long beginTimestamp) {
 		this.beginTimestamp = beginTimestamp;
-	}
-
-	public long getEndTimestamp() {
-		return endTimestamp;
 	}
 
 	public void setEndTimestamp(long endTimestamp) {
 		this.endTimestamp = endTimestamp;
 	}
 
-	public long getSessionDuration() {
-		return sessionDuration;
-	}
-
 	public void setSessionDuration(long sessionDuration) {
 		this.sessionDuration = sessionDuration;
 	}
 
+	public void setSessionDuration(long beginTimestamp, long endTimestamp) {
+		if (!(beginTimestamp<=0 || endTimestamp<=0)) this.sessionDuration = endTimestamp-beginTimestamp;
+		else this.sessionDuration=0L;
+
+	}
+
+	public long getBeginTimestamp() {
+		return beginTimestamp;
+	}
+
+	public long getEndTimestamp() {
+		return endTimestamp;
+	}
+
+	public long getSessionDuration() {
+		return sessionDuration;
+	}
+
+
+	public TimestampWritableComparable(LocalDateTime bt, LocalDateTime et){
+		this.beginTimestamp=bt.toEpochSecond(ZoneOffset.UTC);
+		this.endTimestamp= et.toEpochSecond(ZoneOffset.UTC);
+		if (!et.equals(LocalDateTime.MIN) && !bt.equals(LocalDateTime.MIN)){
+			this.sessionDuration = this.beginTimestamp - this.endTimestamp;
+		}
+	}
+
+
 	@Override
 	public int compareTo(TimestampWritableComparable that) {
-		long thisValue = this.sessionDuration;
-		long thatValue = that.sessionDuration;
-		return (thisValue < thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+		return Long.compare(this.sessionDuration, that.sessionDuration);
 
 	}
 
 	@Override
 	public void write(DataOutput dataOutput) throws IOException {
-		dataOutput.writeLong(beginTimestamp);
-		dataOutput.writeLong(endTimestamp);
-		dataOutput.writeLong(sessionDuration);
+		dataOutput.writeLong(this.beginTimestamp);
+		dataOutput.writeLong(this.endTimestamp);
+		dataOutput.writeLong(this.sessionDuration);
 
 	}
 
 	@Override
 	public void readFields(DataInput dataInput) throws IOException {
 		beginTimestamp = dataInput.readLong();
-		endTimestamp = dataInput.readLong();
-		sessionDuration = dataInput.readLong();
+		endTimestamp =  dataInput.readLong();;
+		sessionDuration =  dataInput.readLong();
 	}
 
 
 	@Override
 	public String toString() {
-		return beginTimestamp + "," + endTimestamp+ "," +sessionDuration;
+		return Long.toString(beginTimestamp)+","+Long.toString(endTimestamp)+","+Long.toString(sessionDuration);
 	}
+
 
 }
