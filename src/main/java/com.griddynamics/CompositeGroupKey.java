@@ -58,9 +58,10 @@ public class CompositeGroupKey implements WritableComparable<CompositeGroupKey> 
 		return result;
 	}
 
-
 	@Override
 	public String toString() {
-		return username + "," + sessionId;
+		String result= username;
+		if(!sessionId.equals("")) result += ("," + sessionId);
+		return result;
 	}
 }
