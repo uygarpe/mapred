@@ -74,7 +74,6 @@ public class UserSessionLength {
 
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-		conf.set("mapreduce.textoutputformat.separator", ",");
 		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 		if (otherArgs.length != 3) {
 			System.err.println("Usage: usersessionlength <in> <out>");
