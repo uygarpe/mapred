@@ -1,12 +1,12 @@
-package com.griddynamics;
+package com.griddynamics.mapper;
 
-import org.apache.hadoop.io.LongWritable;
+import com.griddynamics.customtype.CompositeGroupKey;
+import com.griddynamics.customtype.TimestampWritableComparable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 public class UserSessionInfoMapper extends Mapper<Object, Text, CompositeGroupKey, TimestampWritableComparable> {
 

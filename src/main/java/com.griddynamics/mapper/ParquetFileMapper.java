@@ -1,4 +1,4 @@
-package com.griddynamics;
+package com.griddynamics.mapper;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -9,9 +9,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 
-class ParquetFile extends Mapper<LongWritable, Text, Void, GenericRecord>  {
+public class ParquetFileMapper extends Mapper<LongWritable, Text, Void, GenericRecord>  {
 
-	static final Schema AVRO_SCHEMA = new	Schema.Parser().parse(
+	public static final Schema AVRO_SCHEMA = new	Schema.Parser().parse(
 					"{\n" +
 						"	\"type\":	\"record\",\n" +
 						"	\"name\":	\"testFile\",\n" +

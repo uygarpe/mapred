@@ -1,4 +1,4 @@
-package com.griddynamics;
+package com.griddynamics.customtype;
 
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableUtils;
