@@ -4,14 +4,18 @@ import java.io.IOException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 
+import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.apache.parquet.avro.AvroParquetOutputFormat;
+import org.apache.parquet.example.data.Group;
 
 @SuppressWarnings("Duplicates")
 public class UserSessionLength {
@@ -36,7 +40,7 @@ public class UserSessionLength {
 		}
 	}
 
-	public static class SessionDurationReducer	extends Reducer<CompositeGroupKey,TimestampWritableComparable,CompositeGroupKey,DateTimeWritable> {
+	public static class SessionDurationReducer	extends Reducer<CompositeGroupKey,TimestampWritableComparable,NullWritable,Text> {
 
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
@@ -64,29 +68,47 @@ public class UserSessionLength {
 			result.setBeginTimestampText(new Text(beginLocalDate.format(formatter)));
 			result.setEndTimestampText(new Text(endLocalDate.format(formatter)));
 			result.setSessionDuration(maxdur);
-			context.write(key, result);
+			context.write(NullWritable.get(), new Text(key.getUsername().concat(",").concat(result.toString())));
 		}
 	}
 
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
+		conf.set("mapreduce.textoutputformat.separator", ",");
 		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-		if (otherArgs.length != 2) {
+		if (otherArgs.length != 3) {
 			System.err.println("Usage: usersessionlength <in> <out>");
 			System.exit(2);
 		}
-		Job job = new Job(conf, "user session length");
-		job.setJarByClass(UserSessionLength.class);
+		Job job1 = new Job(conf, "user session length");
+		job1.setJarByClass(UserSessionLength.class);
 
-		job.setMapperClass(UserSessionInfoMapper.class);
-		job.setMapOutputKeyClass(CompositeGroupKey.class);
-		job.setMapOutputValueClass(TimestampWritableComparable.class);
+		job1.setMapperClass(UserSessionInfoMapper.class);
+		job1.setMapOutputKeyClass(CompositeGroupKey.class);
+		job1.setMapOutputValueClass(TimestampWritableComparable.class);
 
-		job.setCombinerClass(SessionInfoFlattener.class);
-		job.setReducerClass(SessionDurationReducer.class);
+		job1.setCombinerClass(SessionInfoFlattener.class);
+		job1.setReducerClass(SessionDurationReducer.class);
 
-		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
-		FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
+		Path outputPath1=new Path(otherArgs[1]);
+		FileInputFormat.addInputPath(job1, new Path(otherArgs[0]));
+		FileOutputFormat.setOutputPath(job1, outputPath1);
+		job1.waitForCompletion(true);
+
+		// Parquet conversion
+		Configuration conf2=new Configuration();
+		Job job2 = new Job(conf2, "write results as parquet");
+		job2.setJarByClass(ParquetFile.class);
+		job2.setMapperClass(ParquetFile.class);
+		job2.setMapOutputKeyClass(GenericRecord.class);
+		job2.setNumReduceTasks(0);
+		job2.setOutputKeyClass(Void.class);
+		job2.setOutputValueClass(Group.class);
+		job2.setOutputFormatClass(AvroParquetOutputFormat.class);
+		AvroParquetOutputFormat.setSchema(job2, ParquetFile.AVRO_SCHEMA);
+		Path outputPath2=new Path(args[2]);
+		FileInputFormat.addInputPath(job2, outputPath1);
+		FileOutputFormat.setOutputPath(job2, outputPath2);
+		System.exit(job2.waitForCompletion(true)?0:1);
 	}
 }
