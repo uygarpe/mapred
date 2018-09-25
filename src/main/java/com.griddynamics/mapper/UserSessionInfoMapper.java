@@ -13,6 +13,18 @@ public class UserSessionInfoMapper extends Mapper<Object, Text, CompositeGroupKe
 	private static final String BEGIN = "begin";
 	private static final String END = "end";
 
+	/**
+	 * Overriden map method from Mapper class. Takes lines of data, parses them into format:
+	 * (CompositeGroupKey, TimestampWritableComparable) tuples which translate to:
+	 * <i>(username, sessionId, beginTimestamp, endTimestamp,Duration)</i>
+	 * Uses TimestampWritableComparable objects to translate DateTime values of DateTimeFormatter.ISO_LOCAL_DATE_TIME
+	 * format to milliseconds for comparison and find durations.
+	 * @param key Index of the line of the file
+	 * @param value one line of data
+	 * @param context Mapper context that create output in the form of TimestampWritableComparable objects.
+	 * @throws IOException in case of filesystem io errors
+	 * @throws InterruptedException in case the task is interrupted by user input or otherwise.
+	 */
 	@Override
 	public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 

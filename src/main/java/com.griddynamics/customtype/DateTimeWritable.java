@@ -7,6 +7,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+/**
+ * Class that holds beginTimestamp, endTimestamp, duration as text fields. Implements Writable interface to store objects as
+ * results of a mapreduce task.
+ */
 public class DateTimeWritable implements Writable {
 
 	public DateTimeWritable() {
