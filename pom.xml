@@ -31,7 +31,17 @@
       </plugin>
     </plugins>
   </build>
-
+  <profiles>
+    <profile>
+      <id>disable-java8-doclint</id>
+      <activation>
+        <jdk>[1.8,)</jdk>
+      </activation>
+      <properties>
+        <additionalparam>-Xdoclint:none</additionalparam>
+      </properties>
+    </profile>
+  </profiles>
   <dependencies>
     <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-core -->
     <dependency>

@@ -7,6 +7,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+/**
+ * Class to hold username and sessionId as a grouped key. Implements WritableComparable for reading, writing and comparing
+ * objects.
+ */
 public class CompositeGroupKey implements WritableComparable<CompositeGroupKey> {
 	private String username;
 	private String sessionId;
@@ -36,15 +40,21 @@ public class CompositeGroupKey implements WritableComparable<CompositeGroupKey> 
 		this.username=uname;
 		this.sessionId=sId;
 	}
+
+	@Override
 	public void write(DataOutput out) throws IOException {
 		WritableUtils.writeString(out, username);
 		WritableUtils.writeString(out, sessionId);
 
 	}
+
+	@Override
 	public void readFields(DataInput in) throws IOException {
 		this.username = WritableUtils.readString(in);
 		this.sessionId = WritableUtils.readString(in);
 	}
+
+	@Override
 	public int compareTo(CompositeGroupKey that) {
 		int result=0;
 		if (that == null)

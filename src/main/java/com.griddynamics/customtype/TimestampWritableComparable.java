@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+/**
+ * Class for holding long  values of beginTimestamp,endTimestamp and duration.
+ */
 public class TimestampWritableComparable  implements WritableComparable<TimestampWritableComparable> {
 	private long beginTimestamp;
 	private long endTimestamp;
@@ -77,7 +80,7 @@ public class TimestampWritableComparable  implements WritableComparable<Timestam
 	@Override
 	public void readFields(DataInput dataInput) throws IOException {
 		beginTimestamp = dataInput.readLong();
-		endTimestamp =  dataInput.readLong();;
+		endTimestamp =  dataInput.readLong();
 		sessionDuration =  dataInput.readLong();
 	}
 
